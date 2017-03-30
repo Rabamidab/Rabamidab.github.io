@@ -67,32 +67,58 @@ var ShoppingBag = function () {
             var serialObj = JSON.stringify(this.data[i]); //сериализуем список
             localStorage.setItem(ShoppingBag.itemsIter, serialObj); //запишем его в хранилище по ключу
             ShoppingBag.itemsIter++;
+            ShoppingBag.show();
+            ShoppingBag.getSum();
         }
     }, {
         key: 'removeItem',
         value: function removeItem(key) {
             localStorage.removeItem(key);
+            ShoppingBag.show();
+            ShoppingBag.getSum();
+        }
+    }, {
+        key: 'changeGoodQuantity',
+        value: function changeGoodQuantity(key, q) {
+            var item = JSON.parse(localStorage.getItem(key));
+            item.quantity = q;
+            localStorage.setItem(key, JSON.stringify(item));
+            ShoppingBag.show();
+            ShoppingBag.getSum();
+        }
+    }], [{
+        key: 'show',
+        value: function show() {
+            var data = this.data;
+            var ret = '';
+
+            $('#basket .basket__item').remove();
+            for (var key in localStorage) {
+                var obj = JSON.parse(localStorage.getItem(key));
+                var price = void 0;
+                if (obj.quantity != undefined) {
+                    price = obj.price * obj.quantity;
+                } else {
+                    price = obj.price;
+                }
+                ret += '<div class="basket__item">\n                    <span class="basket__image-container">\n                        <span class="basket__image"></span>\n                    </span>\n                    <span class="basket__item-description">\n                        ' + obj.name + ' ' + obj.color + ' ' + obj.size + '\n                        <span class="basket__remove-button" onclick=(sb.removeItem(' + key + '))>[Remove]</span>\n                    </span>\n\n                    <input type="number" class="basket__num-of" min="0" value="' + obj.quantity + '" onchange="sb.changeGoodQuantity(' + key + ',this.value)">\n                    <span class="basket__item-price">\xA3' + price + '</span>\n                </div>';
+            }
+            $('#basket').append(ret);
         }
     }, {
         key: 'getSum',
         value: function getSum() {
             var sum = 0;
             for (var key in localStorage) {
-                sum += JSON.parse(localStorage.getItem(key)).price;
+                var obj = JSON.parse(localStorage.getItem(key));
+                if (obj.quantity != undefined) {
+                    sum += obj.price * obj.quantity;
+                } else {
+                    sum += obj.price;
+                }
             }
             $('#basket .basket__total').html('Total: \xA3 ' + sum);
             return sum;
-        }
-    }, {
-        key: 'show',
-        value: function show() {
-            var data = this.data;
-            var ret = '';
-            for (var key in localStorage) {
-                var obj = JSON.parse(localStorage.getItem(key));
-                ret += '<div class="basket__item">\n                    <span class="basket__image-container">\n                        <span class="basket__image"></span>\n                    </span>\n                    <span class="basket__item-description">\n                        ' + obj.name + ' ' + obj.color + ' ' + obj.size + '\n                        <span class="basket__remove-button" onclick=(sb.removeItem(' + key + '))>[Remove]</span>\n                    </span>\n\n                    <input type="number" class="basket__num-of">\n                    <span class="basket__item-price">\xA3' + obj.price + '</span>\n                </div>';
-            }
-            $('#basket').append(ret);
         }
     }]);
 
@@ -136,7 +162,7 @@ var Goods = function () {
                 for (var _iterator = names[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
                     var i = _step.value;
 
-                    ret += '<article class="product__item grid__col grid__col_4 web-page__item">\n                    <div class="product__image">\n                        <object class="product__logo" type="image/svg+xml" data="img/vans.svg">\n                            Ray ban\n                        </object>\n                    </div>\n                    <div class="product__about">\n                        <h2 class="product__header">' + this.data[i].name + '</h2>\n                        <div class="product__color">' + this.data[i].color + '</div>\n                        <div class="product__size">\n                            Size: ' + this.data[i].size + '\n                            <span class="product__size-changer">[Change]</span>\n                        </div>\n                        <div class="product__price">\xA3' + this.data[i].price + '</div>\n                        <button class="product__button button button__small button_blue" onclick=(sb.addItem(' + i + '))>ADD TO BASKET</button>\n                    </div>\n                </article>';
+                    ret += '<article class="product__item grid__col grid__col_4 web-page__item">\n                    <div class="product__image">\n                        <img src="' + this.data[i].picture + '" alt="\u0418\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435 \u0442\u043E\u0432\u0430\u0440\u0430">\n                        <object class="product__logo" type="image/svg+xml" data="img/vans.svg">\n                            Ray ban\n                        </object>\n                    </div>\n                    <div class="product__about">\n                        <h2 class="product__header">' + this.data[i].name + '</h2>\n                        <div class="product__color">' + this.data[i].color + '</div>\n                        <div class="product__size">\n                            Size: ' + this.data[i].size + '\n                            <span class="product__size-changer">[Change]</span>\n                        </div>\n                        <div class="product__price">\xA3' + this.data[i].price + '</div>\n                        <button class="product__button button button__small button_blue" onclick=(sb.addItem(' + i + '))>ADD TO BASKET</button>\n                    </div>\n                </article>';
                 }
             } catch (err) {
                 _didIteratorError = true;
@@ -172,9 +198,14 @@ $(window).on('load', function () {
     window.gd = new Goods(data_);
     gd.show(gd.getWithNameSelector());
     window.sb = new ShoppingBag(data_);
-    sb.show();
-    sb.getSum();
+    ShoppingBag.show();
+    ShoppingBag.getSum();
     var men = new Menu('.navbar');
     men.subscribe();
     men.changePages();
+    $('.navbar__search input').on('input', function () {
+        // alert('sdffds');
+        // console.log($('.navbar__search input').val());
+        ShoppingBag.show(gd.show(gd.getWithNameSelector($('.navbar__search input').val())));
+    });
 });
